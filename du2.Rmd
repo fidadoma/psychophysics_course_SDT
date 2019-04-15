@@ -1,0 +1,82 @@
+---
+title: "DU2"
+author: "Filip Děchtěrenko"
+date: "15 dubna 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
+if(!require(pander)) {install.packages("pander")}
+
+source("https://raw.githubusercontent.com/fidadoma/psychophysics_course_SDT/12d6db71cbe5dbda9e1d6bc8c4b19ee59ee6a1ff/utils.R")
+```
+
+## R Markdown
+
+Stáhněte si data z https://figshare.com/articles/Mammogram_and_Face_Data/5248513. Jde o data za článku https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6092273/
+
+V Rku můžeme stahovat přímo z webu. 
+
+```{r download data, message = F}
+df <- read_csv("https://ndownloader.figshare.com/files/8973241")
+
+df %>% head() 
+
+```
+
+Data jsou kódovány následovně:
+
+* pro snímky mamografů
+    * response = 0 - normální
+    * response = 1 - abnormální
+  
+* pro snímky obličejů
+    * response = 0 - neutrální výraz
+    * response = 1 - šťastný výraz
+
+
+# Výběr dat
+
+Vyberte si jen participanta s username = 4
+
+```{r select subject 4}
+
+```
+
+# Kontigenční tabulky
+
+Pro každou kombinaci snímků a orientace (2x2 možnosti) spo4ítejte kontingenční tabulku s počty hitů, missů, FA a CR. Můžete využít příkazu `xtabs()` či dplyr syntax. Hity a FA si uložte jako vektor do proměnných `Hs` a `FAs`. Proměnné ve vektoru jsou v pořadí mamografy-normální, mamografy-invertované, tváře-normální, tváře-invertované. 
+
+```{r contingency tables}
+
+```
+
+# Senzitivita
+
+Spočítejte d' pro jednotlivé podmínky. Můžete použít funkci `compute_dprime(H,FA)`. funkce funguje i vektorově, tedy můžete zavolat příkaz `compute_dprime(c(H1,H2),c(FA1,FA2))`, kde H1/H2 a FA1/FA2 jsou Hity a FA pro dvě podmínky.
+
+```{r dprime}
+
+```
+
+# Bias
+
+Spočítejte c a c' pro pro jednotlivé podmínky. Můžete použít funkci `compute_bias(H,FA, type = XX)`, kde type je jedna z možností "C", "C_rel","lnB"
+
+```{r bias}
+
+```
+
+# Vizualizace
+
+Na základě analýz a následujícího grafu vysvětlete rozdíl ve výkonu.
+
+```{r visualization}
+
+df_plot <- tibble(H = Hs, FA = FAs, type1 = c("mamograf","mamograf","fotografie","fotografie"), type2 = c("normal","inverted","normal","inverted"))
+
+df_plot %>% plot_normal_ROC_forDU()
+```
