@@ -1,0 +1,187 @@
+---
+title: "SDT ukazka"
+author: "Filip Děchtěrenko"
+date: "14 dubna 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE, message=F, warning=F}
+knitr::opts_chunk$set(echo = TRUE)
+
+if(!require(pander)) {install.packages("pander")}
+
+set.seed(123)
+
+library(tidyverse)
+source("utils.R")
+```
+
+## Data
+
+3 pokusné osoby vidí videonahrávky, na kterých je vždy 1 člověk a říká o sobě 1 fakt. Úkolem je rozhodnout, zda je daný fakt Pravda nebo Lež. Celkem bylo použito 100 nahrávek, z toho 50 byla předvybráno jako Pravda a 50 jako Lež.
+
+Participanti byli měřeni ve dvou podmínkách:
+
+* střízliví 
+* po dvou panácích 
+
+Každá osoba tedy byla měřena 2x ve dvou různých měřeních, pořadí bylo randomizováno
+
+```{r data}
+
+df <- create_data()
+
+df %>% head() %>% pander::pander(caption = "Ukazka dat")
+
+```
+
+Data pro SDT analýzu nás typicky zajímají v tabulkové podobě. V rku to můžeme získat příkazem `table` nebo příkazem `xtabs`. Pro výpis hezký tabulek používáme balíček pander.
+
+```{r print nice tables}
+xtabs( ~ subject_id + condition + statement + answer, df) %>% pander::pander()
+```
+
+# První participant
+
+Nejprve vybereme pouze data pro prvního participanta
+
+```{r select frist participant}
+
+df1 <- df %>% filter(subject_id == 1)
+
+```
+
+Spočítáme hity a false alarmy pro obě podmínky
+
+```{r table}
+
+df1_sober <- df1 %>% filter(condition == "sober")
+df1_drunk <- df1 %>% filter(condition == "drunk")
+
+df1_sober %>% xtabs(~answer+statement,.)
+```
+
+Pokud to chceme v procentech, můžeme použít funkci `prop.table(tabulka, margin = 2)`, kde tabulka ja daná kontingenční tabulka a margin = 2 značí, že jde o sloupcové poměry.
+
+```{r prop table}
+tb1_sober <- df1_sober %>% xtabs(~answer+statement,.) %>% prop.table(margin = 2)
+tb1_sober
+
+```
+
+Z tabulky je tedy vidět, že H = `r tb1_sober[1,1]` a FA = `r tb1_sober[1,2]`. Tabulku můžeme indexovat pomocí závorek `[,]`, přičemž první parametr značí řádky a druhý sloupce. Příkaz `tb1_sober[2,2]` tedy vybírá Correct rejections.
+
+
+Pro výpočet d' využijeme rovnice `d' = z(H) - z(FA)`, kde pro z-transformaci v R použijeme příkaz `qnorm()`
+```{r dprime sober}
+d <- qnorm(tb1_sober[1,1]) - qnorm(tb1_sober[1,2])
+```
+
+Senzitivita v střízlivém případě je tedy d' = `r d %>% round(2)`.
+
+Pro výpočet biasu použijeme vzoreček `c = `-$\frac{1}{2} (z(H) + z(FA))$
+
+```{r bias sober}
+bias <- -0.5*(qnorm(tb1_sober[1,1]) + qnorm(tb1_sober[1,2]))
+
+```
+
+Bias v střízlivém případě je tedy c = `r bias %>% round(2)`.
+
+Stejně tak můžeme spočítat d' a bias v opilé podmínce
+
+```{r drunk condition participant 1}
+tb1_drunk <- df1_drunk %>% xtabs(~answer+statement,.) %>% prop.table(margin = 2)
+d_drunk <- qnorm(tb1_drunk[1,1]) - qnorm(tb1_drunk[1,2])
+bias_drunk <- -0.5*(qnorm(tb1_drunk[1,1]) + qnorm(tb1_drunk[1,2]))
+
+```
+
+V podmínce opilosti je tedy d'= `r d_drunk %>% round(2)` a bias=`r bias_drunk %>% round(2)`. Co to zanamená?
+
+```{r plot ROC}
+df_plot_subj1 <- tibble(H = c(tb1_sober[1,1],tb1_drunk[1,1]), FA = c(tb1_sober[1,2],tb1_drunk[1,2]), label = c("P1_sober", "P1_drunk"))
+plot_normal_ROC(df_plot_subj1)
+```
+
+# Druhý participant
+
+stejnou analýzu můžeme spočítat i pro druhého participanta
+
+```{r second participant}
+df2_sober <- df %>% filter(subject_id == 2, condition == "sober")
+df2_drunk <- df %>% filter(subject_id == 2, condition == "drunk")
+tb2_sober <- df2_sober %>% xtabs(~answer+statement,.) %>% prop.table(margin = 2)
+tb2_drunk <- df2_drunk %>% xtabs(~answer+statement,.) %>% prop.table(margin = 2)
+
+subj2_sober_dprime <- qnorm(tb2_sober[1,1]) - qnorm(tb2_sober[1,2])
+subj2_drunk_dprime <- qnorm(tb2_drunk[1,1]) - qnorm(tb2_drunk[1,2])
+
+subj2_sober_bias   <- -0.5*(qnorm(tb2_sober[1,1]) + qnorm(tb2_sober[1,2]))
+subj2_drunk_bias   <- -0.5*(qnorm(tb2_drunk[1,1]) + qnorm(tb2_drunk[1,2]))
+```
+
+Druhý participant má tedy ve střízlivé podmíce d' = `r abs(subj2_sober_dprime) %>% round(2)`, c = `r subj2_sober_bias %>% round(2)` a v opilé podmínce d' = `r abs(subj2_drunk_dprime) %>% round(2)` a c = `r subj2_drunk_bias %>% round(2)`.
+
+A graficky
+
+```{r}
+df_plot_subj2 <- tibble(H = c(tb2_sober[1,1],tb2_drunk[1,1]), FA = c(tb2_sober[1,2],tb2_drunk[1,2]), label = c("P2_sober", "P2_drunk"))
+plot_normal_ROC(df_plot_subj2)
+```
+
+# Třetí participant
+
+```{r third participant}
+df3_sober <- df %>% filter(subject_id == 3, condition == "sober")
+df3_drunk <- df %>% filter(subject_id == 3, condition == "drunk")
+tb3_sober <- df3_sober %>% xtabs(~answer+statement,.) %>% prop.table(margin = 2)
+tb3_drunk <- df3_drunk %>% xtabs(~answer+statement,.) %>% prop.table(margin = 2)
+
+subj3_sober_dprime <- qnorm(tb3_sober[1,1]) - qnorm(tb3_sober[1,2])
+subj3_drunk_dprime <- qnorm(tb3_drunk[1,1]) - qnorm(tb3_drunk[1,2])
+
+subj3_sober_bias   <- -0.5*(qnorm(tb3_sober[1,1]) + qnorm(tb3_sober[1,2]))
+subj3_drunk_bias   <- -0.5*(qnorm(tb3_drunk[1,1]) + qnorm(tb3_drunk[1,2]))
+```
+
+Třetí participant má tedy ve střízlivé podmíce d' = `r abs(subj3_sober_dprime) %>% round(2)`, c = `r subj3_sober_bias %>% round(2)` a v opilé podmínce d' = `r abs(subj3_drunk_dprime) %>% round(2)` a c = `r subj3_drunk_bias %>% round(2)`.
+
+A graficky
+
+```{r}
+df_plot_subj3 <- tibble(H = c(tb3_sober[1,1],tb3_drunk[1,1]), FA = c(tb3_sober[1,2],tb3_drunk[1,2]), label = c("P3_sober", "P3_drunk")) 
+
+plot_normal_ROC(df_plot_subj3)
+```
+
+# Všichni tři dohormady
+
+Můžeme je zobrazit i všechny dohromady (funkce `plot_normal_ROC` není pro tyto účely úplně vhodná)
+
+```{r all together}
+rbind(df_plot_subj1, df_plot_subj2, df_plot_subj3) %>% plot_normal_ROC()
+```
+
+# Výpočet pomocí dplyru
+
+Zatím jsme to počítali ručně, pomocí dplyru se to dá velmi zjednodušit
+
+```{r}
+df_HFA <- df %>% 
+  group_by(subject_id, condition) %>% 
+  summarize(H = sum(statement == "truth" & answer == "I believe") / sum(statement == "truth"),
+            FA = sum(statement == "lie" & answer == "I believe") / sum(statement == "lie")) 
+
+df_HFA %>% pander::pander(digits = 2)
+```
+
+A můžeme jít ještě dál. Použijeme připravené funkce `compute_dprime` a `compute_bias`. Pro výpočet biasu můžeme specifikovat, který typ biasu nás zajímá pomocí parametru type. Možnosti jsou "C","C_rel" a "lnB"
+
+```{r}
+df_HFA %>% 
+  mutate(d_prime = compute_dprime(H,FA),
+         c = compute_bias(H,FA, type = "C"),
+         c_rel = compute_bias(H,FA, type = "C_rel"),
+         lnBeta = compute_bias(H,FA, type = "lnB")) %>% pander::pander(digits = 2)
+```
