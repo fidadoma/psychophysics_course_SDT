@@ -127,3 +127,37 @@ plot_normal_ROC <- function(l) {
   
 }
 
+plot_normal_ROC_forDU <- function(l) {
+  df <- NULL 
+  df_HF <- tibble(H = NA,FA = NA,type1 = l$type1, type2 = l$type2)
+  Hs  <- seq(0, 1, 0.01)
+  
+  for (i in 1:length(l$H)) {
+    H <- l$H[i]
+    FA <- l$FA[i]
+    if (H < FA) {
+      FA   <- 1-FA
+      H <- 1-H
+    }
+    
+    df_HF$H[i] <- H
+    df_HF$FA[i] <- FA
+    d   <- compute_dprime(H, FA)
+    
+    FAs <- compute_FA_from_dprime(d, Hs)
+    if(is.null(df)){ 
+      df <- tibble(Hit=Hs,`False alarm` = FAs, type1 = l$type1[i], type2 = l$type2[i])
+    } else {
+      df <- rbind(df, tibble(Hit=Hs,`False alarm` = FAs, type1 = l$type1[i], type2 = l$type2[i]))
+    }
+    
+    
+  }    
+  df %>% ggplot(aes(y = Hit, x = `False alarm`, group = interaction(type1,type2))) + 
+    geom_line(aes(linetype = type1)) + 
+    ggtitle(sprintf("normal ROCs")) +
+    geom_point(data = df_HF, mapping = aes(x = FA, y = H, col = type2), size = 2) + 
+    geom_text(data = df_HF, mapping = aes(x = FA, y = H+0.05, label = as.character(compute_dprime(H,FA) %>% round(2))), size = 2) + 
+    theme(aspect.ratio = 1)
+  
+}
