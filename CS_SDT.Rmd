@@ -1,0 +1,81 @@
+---
+title: "Computational cognitive science - SDT"
+author: "Filip Děchtěrenko"
+date: "15 dubna 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
+if(!require(pander)) {install.packages("pander")}
+
+source("https://raw.githubusercontent.com/fidadoma/psychophysics_course_SDT/12d6db71cbe5dbda9e1d6bc8c4b19ee59ee6a1ff/utils.R")
+```
+
+## R Markdown
+
+download data from https://figshare.com/articles/Mammogram_and_Face_Data/5248513. Data is from the article https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6092273/
+
+
+```{r download data, message = F}
+df <- read_csv("https://ndownloader.figshare.com/files/8973241")
+
+df %>% head() 
+
+```
+
+Data are coded as follows:
+
+* for mammograph stimuli
+    * response = 0 - normal
+    * response = 1 - abnormal
+  
+* for face stimuli
+    * response = 0 - neutral expression
+    * response = 1 - happy expression
+
+
+# Selection of participant
+
+Select just participant with username = 4
+
+```{r select subject 4}
+
+```
+
+# Contingency tables
+
+For each combination of stimuli type and orientation (2x2 outcomes), compute contingency tables with number of hits, FA, correct rejection and misses. You can use `xtabs()` or dplyr syntax. Hits and FA save as vector into variables  `Hs` and `FAs`. Values in vector should be in order mammographs-normal, mammograph-inverted, faces-normal, faces-inverted. 
+
+```{r contingency tables}
+
+```
+
+# Senzitivity
+
+Compute d' for individual conditions. You can use function `compute_dprime(H,FA)`. Funciton works in vector form, so you can use `compute_dprime(c(H1,H2),c(FA1,FA2))`, where H1/H2 and FA1/FA2 are hit rates and FA rate for both conditions.
+
+```{r dprime}
+
+```
+
+# Bias
+
+Compute c a c' for individual conditions. You can use function `compute_bias(H,FA, type = XX)`, where type is one of the options "C", "C_rel","lnB"
+
+```{r bias}
+
+```
+
+# Visualization
+
+Based on the analysis and following plot, explain the difference in performance.
+
+```{r visualization}
+
+df_plot <- tibble(H = Hs, FA = FAs, type1 = c("mamograf","mamograf","fotografie","fotografie"), type2 = c("normal","inverted","normal","inverted"))
+
+df_plot %>% plot_normal_ROC_forDU()
+```
