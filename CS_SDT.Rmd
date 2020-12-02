@@ -75,7 +75,7 @@ Based on the analysis and following plot, explain the difference in performance.
 
 ```{r visualization}
 
-df_plot <- tibble(H = Hs, FA = FAs, type1 = c("mamograf","mamograf","fotografie","fotografie"), type2 = c("normal","inverted","normal","inverted"))
+df_plot <- tibble(H = Hs, FA = FAs, type1 = c("mammograph","mammograph","photography","photography"), type2 = c("normal","inverted","normal","inverted"))
 
 df_plot %>% plot_normal_ROC_forDU()
 ```
