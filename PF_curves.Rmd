@@ -64,7 +64,7 @@ head(HSP) %>%
   knitr::kable()
 ```
 
-Select sjsut one run and one observer and visualize it
+Select just one run and one observer and visualize it
 
 ````{r}
 SHR1 <- HSP %>% filter(Obs=="SH", Run=="R1")
@@ -143,7 +143,7 @@ Similar can be done within quickpsy
 library(quickpsy)
 
 fit <- quickpsy(HSP, Quanta, PerCent, grouping = c("Obs", "Run")) 
-plot(fit, color = Run)
+plot(fit)
 
 fit$thresholds
 
