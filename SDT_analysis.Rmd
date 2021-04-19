@@ -1,7 +1,7 @@
 ---
 title: "SDT ukazka"
 author: "Filip Děchtěrenko"
-date: "14 dubna 2019"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
 output: html_document
 ---
 
@@ -32,6 +32,18 @@ Každá osoba tedy byla měřena 2x ve dvou různých měřeních, pořadí bylo
 df <- create_data()
 
 df %>% head() %>% pander::pander(caption = "Ukazka dat")
+
+```
+
+Podíváme-li se na to skrz správné odpovědi
+
+```{r pc}
+df <- df %>% 
+  mutate(correct= (((statement == "truth") & (answer == "I believe")) | ((statement == "lie") & (answer == "Do not believe")))) 
+
+df %>% 
+  group_by(subject_id, condition) %>% 
+  summarize(pc = mean(correct))
 
 ```
 
@@ -184,4 +196,44 @@ df_HFA %>%
          c = compute_bias(H,FA, type = "C"),
          c_rel = compute_bias(H,FA, type = "C_rel"),
          lnBeta = compute_bias(H,FA, type = "lnB")) %>% pander::pander(digits = 2)
+```
+
+# V případě 2AFC
+
+U AFC úloh je lehčí odpovídat
+
+```{r}
+df_HFA %>% 
+  mutate(d_prime = compute_dprime(H,FA),
+         d_prime_2afc = d_prime*sqrt(2))
+           
+```
+
+# Převod pc na d'
+
+V případě nulového biasu můžeme převádět na procento správné odpovědi (d' = 2z(p(c))). V našem případě máme pc
+
+```{r pc and d}
+df %>% 
+  group_by(subject_id, condition) %>% 
+  summarize(pc = mean(correct))
+
+```
+ 
+ Tedy příslušné d'
+```{r} 
+ df %>% 
+  group_by(subject_id, condition) %>% 
+  summarize(pc = mean(correct), .groups = "drop") %>% 
+  mutate(d_prime_pc = 2*qnorm(pc))
+```
+
+# Korekce na hádání
+
+Někdy budeme chtít použít jen korekci na hádání (q = (H-F)/(1-F))
+
+```{r}
+ df_HFA %>% 
+  group_by(subject_id, condition) %>% 
+  mutate(q = (H-F)/(1-F))
 ```
