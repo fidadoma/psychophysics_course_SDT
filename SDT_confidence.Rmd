@@ -1,0 +1,73 @@
+---
+title: "Confidence"
+author: "Filip Děchtěrenko"
+date: "26 4 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(patchwork)
+```
+
+## read data
+
+```{r}
+df <- readRDS("rating_example.rds")
+colnames(df) <- colnames(df) %>% str_replace("old.","old_") %>% str_replace("new.","new_")
+
+df <- df %>% select(stimuli, time, everything())
+m <- df %>% select_if(is.numeric) %>% as.matrix()
+
+
+```
+
+Relative cumsums
+
+```{r}
+m_p <- m %>% prop.table(margin = 1)
+m_p %>% round(3)
+m_cump <- t(apply(m_p, 1, cumsum))
+m_cump <- m_cump[,-6]
+d <- qnorm(m_cump)
+d[1,]-d[2,]
+d[3,]-d[4,]
+```
+
+and using dplyr
+
+```{r}
+df1 <- rbind(df %>% select(-starts_with("new")) %>% 
+  pivot_longer(cols = old_Very.sure:old_Not.sure.at.all, values_to = "n") %>% 
+  separate(name, into = c("response", "confidence"), sep = "_",remove = F),
+df %>% select(-starts_with("old")) %>% 
+  pivot_longer(cols = new_Very.sure:new_Not.sure.at.all, values_to = "n") %>% 
+  separate(name, into = c("response", "confidence"), sep = "_",remove = F)) %>% 
+  mutate(ord = factor(name, levels = c("old_Very.sure", "old_Somewhat.sure", "old_Not.sure.at.all", "new_Not.sure.at.all", "new_Somewhat.sure", "new_Very.sure"))) %>% select(-name)
+df_SDT <- df1 %>% 
+  arrange(stimuli, time,ord) %>% # seřadíme
+  group_by(stimuli, time) %>% # pro každou skupinu
+  mutate(n_r = n/sum(n)) %>% # relativní četnosti
+  mutate(cum_nr = cumsum(n_r)) %>% # kumulativní suma
+  mutate(z = qnorm(cum_nr)) %>% # z skory
+  filter(!is.infinite(z))
+df_SDT  
+
+p1 <- df_SDT %>% 
+  select(-n, -ord, -n_r, -z) %>% 
+  pivot_wider(values_from = cum_nr, names_from = stimuli) %>% 
+  ggplot(aes(x = New, y = Old, col = time)) + geom_point() + theme(aspect.ratio = 1) + 
+  geom_path()
+
+p2 <- df_SDT %>% 
+  select(-n, -ord, -n_r, -cum_nr) %>% 
+  pivot_wider(values_from = z, names_from = stimuli) %>% 
+  mutate(d = Old- New) %>% 
+  ggplot(aes(x = New, y = Old, col = time)) + geom_point() + theme(aspect.ratio = 1) + 
+  geom_path()
+```
+
+```{r}
+p1 + p2
+```
