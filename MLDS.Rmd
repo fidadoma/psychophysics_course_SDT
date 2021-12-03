@@ -1,0 +1,42 @@
+---
+title: "MLDS"
+author: "Filip Děchtěrenko"
+date: "26 4 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Jak rozpoznáváme korelace?
+
+Načteme knihovnu
+
+```{r}
+library(tidyverse)
+library(MLDS) # případně nainstalujeme install.packages("MLDS")
+```
+
+Data z experimentu (Kenneth Knoblauch to na sobě zkoušel třikrát)
+
+```{r}
+data(kk1)
+data(kk2)
+data(kk3)
+df <- rbind(kk1,kk2,kk3) %>% as_tibble
+df
+```
+Přeházíme odpovědi (aby hodnoty odpovídaly fyzickým rozdílům)
+```{r}
+
+df <- SwapOrder(df)
+df
+```
+
+a spustíme MLDS
+```{r}
+mlds_kk <- mlds(df)
+mlds_kk %>% plot()
+
+```
