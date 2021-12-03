@@ -95,6 +95,18 @@ df %>%
             sd_years = sd(yearsExperience))
 ```
 
+# visualization
+
+we use library `ggplot2` which is bundled within tidyverse. We use `aes` to specify the aesthetics for the data.
+
+```{r}
+df %>% 
+  ggplot(aes(x = medicalSpecialty, y = yearsExperience)) +
+  stat_summary(fun.data  = "mean_cl_boot") + 
+  theme(aspect.ratio = 1)
+
+```
+
 # your task
 
 ## Add whether response is correct
@@ -125,8 +137,16 @@ Reason, why we use R for analysis :-)
 This needs some Bayesian packages installed first
 
 ```{r}
+
 library(brms)
 df1 <- df %>% mutate(correct = as.numeric(actual_response == correct_response), yearsExperience = scale(yearsExperience))
+
+df1 %>% 
+  ggplot(aes(x = stimType, y =correct, color = orientation, group = orientation)) +
+  stat_summary(fun.data  = "mean_cl_boot") + 
+  stat_summary(fun = "mean", geom = "line") + 
+  theme(aspect.ratio = 1)
+
 
 brm1 <- brm(correct~stimType*orientation*medicalSpecialty+yearsExperience + (1|username)+(1|stimName),
             family = bernoulli(link = "probit"),
