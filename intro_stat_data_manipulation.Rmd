@@ -1,0 +1,143 @@
+---
+title: "Computational cognitive science - intro statistics"
+author: "Filip Děchtěrenko"
+date: "15 dubna 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+if(!require(tidyverse)) {install.packages("tidyverse")}
+if(!require(pander)) {install.packages("pander")}
+if(!require(ez)) {install.packages("ez")}
+
+library(tidyverse)
+library(ez)
+
+source("https://raw.githubusercontent.com/fidadoma/psychophysics_course_SDT/12d6db71cbe5dbda9e1d6bc8c4b19ee59ee6a1ff/utils.R")
+```
+
+## R Markdown
+
+download data from https://figshare.com/articles/Mammogram_and_Face_Data/5248513. Data is from the article https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6092273/
+
+
+```{r download data, message = F}
+df <- read_csv("https://ndownloader.figshare.com/files/8973241")
+
+df %>% head() 
+
+```
+
+Data are coded as follows:
+
+* for mammograph stimuli
+    * response = 0 - normal
+    * response = 1 - abnormal
+  
+* for face stimuli
+    * response = 0 - neutral expression
+    * response = 1 - happy expression
+
+# Basic verbs
+
+## Filter
+
+Selects data based on some condition
+
+```{r}
+df %>% 
+  filter(yearsExperience >3)
+
+# we can use conbine it
+df %>% 
+  filter((actual_response==0 & correct_response == 1) | (actual_response==1 & correct_response == 0))
+
+# or use string maniulations
+
+df %>% 
+  filter(stimType == "mammogram")
+
+```
+
+## Select
+
+Selects only several columns
+
+```{r}
+df %>% 
+  select(actual_response, correct_response)
+# many helper functions
+df %>% 
+  select(ends_with("response"))
+
+```
+
+## Mutate
+
+Creates new variable (for each row)
+
+```{r}
+df %>% 
+  mutate(bare_stimName = basename(stimName))
+```
+
+
+## Group_by and summarise
+
+Helpful combination, can get aggregates per each group. Group_by creates smaller subgroups, while summarize aggregates whole group by some functions
+
+```{r}
+df %>% 
+  group_by(medicalSpecialty) %>% 
+  summarize(mean_years = mean(yearsExperience),
+            sd_years = sd(yearsExperience))
+```
+
+# your task
+
+## Add whether response is correct
+
+you can use `mutate` verb. Anser is correct, is actual and correct response are in sync
+
+```{r}
+
+```
+
+## Test average accuracy between mammogram and faces
+
+```{r}
+
+```
+
+## complex model - Test differences in accuracy between medical speciality, stimtype and orientation (3-way ANOVA)
+
+```{r}
+```
+
+
+
+# Really complex model
+
+Reason, why we use R for analysis :-)
+
+This needs some Bayesian packages installed first
+
+```{r}
+library(brms)
+df1 <- df %>% mutate(correct = as.numeric(actual_response == correct_response), yearsExperience = scale(yearsExperience))
+
+brm1 <- brm(correct~stimType*orientation*medicalSpecialty+yearsExperience + (1|username)+(1|stimName),
+            family = bernoulli(link = "probit"),
+            data = df1,
+            prior = c(
+              prior(normal(0, 1), class = Intercept),
+              prior(normal(0, 1), class = b) 
+            ),iter = 2000, chains = 4, cores = 4,
+  control = list(adapt_delta = 0.98),
+  file = "brm_example", 
+  seed = 1
+)
+summary(brm1)
+```
