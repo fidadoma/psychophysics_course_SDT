@@ -46,11 +46,11 @@ df %>% select(-starts_with("old")) %>%
   separate(name, into = c("response", "confidence"), sep = "_",remove = F)) %>% 
   mutate(ord = factor(name, levels = c("old_Very.sure", "old_Somewhat.sure", "old_Not.sure.at.all", "new_Not.sure.at.all", "new_Somewhat.sure", "new_Very.sure"))) %>% select(-name)
 df_SDT <- df1 %>% 
-  arrange(stimuli, time,ord) %>% # seřadíme
-  group_by(stimuli, time) %>% # pro každou skupinu
-  mutate(n_r = n/sum(n)) %>% # relativní četnosti
-  mutate(cum_nr = cumsum(n_r)) %>% # kumulativní suma
-  mutate(z = qnorm(cum_nr)) %>% # z skory
+  arrange(stimuli, time,ord) %>% # arrange
+  group_by(stimuli, time) %>% # for every group
+  mutate(n_r = n/sum(n)) %>% # relative sums
+  mutate(cum_nr = cumsum(n_r)) %>% # cum sum
+  mutate(z = qnorm(cum_nr)) %>% # z-scores
   filter(!is.infinite(z))
 df_SDT  
 
@@ -70,4 +70,30 @@ p2 <- df_SDT %>%
 
 ```{r}
 p1 + p2
+```
+
+```{r d_a}
+# equal variance SDT
+df_SDT_eq_var <- df1 %>% 
+  group_by(stimuli, time,response) %>% 
+  summarize(n = sum(n)) %>% 
+  group_by(time) %>% 
+  summarize(H = sum(n[response == "old"&stimuli == "Old"])/sum(n[stimuli=="Old"]),
+            FA = sum(n[response == "old"&stimuli == "New"])/sum(n[stimuli=="Old"])) %>% 
+  mutate(zH = qnorm(H),
+         zFA = qnorm(FA),
+         d= zH-zFA)
+
+df3 <- df_SDT %>% 
+  select(-n, -ord, -n_r, -cum_nr) %>% 
+  pivot_wider(values_from = z, names_from = stimuli) 
+df_s <- df3 %>% 
+  group_by(time) %>% 
+  do(x=lm(Old~New,.) %>% broom::tidy()) %>% 
+  unnest(cols = x) %>% 
+  filter(term == "New") %>% 
+  select(time, s = estimate)
+df_SDT_eq_var %>% 
+  left_join(df_s, by = "time") %>% 
+  mutate(d_a = sqrt(2/(1+s^2))*(zH-zFA))
 ```
